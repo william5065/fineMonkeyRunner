@@ -128,6 +128,16 @@ class fineMonkeyRunner:
 
         return False
 
+    '''获取文本根据id'''
+    def gettextbyid(self,id):
+        if self.isexist(id):
+            view = self.getview(id)
+            viewtext = self.gettextbyview(view)
+            return viewtext
+        else:
+            self.error('Not look for the element or it has a error!')
+            return False
+
     '''获取view根据id'''
     def getview(self, id):
         self.debug('calling getview function by the id (%s)' % id)
@@ -180,6 +190,9 @@ class fineMonkeyRunner:
         traceback.print_exc()
         return False
 
+    def clickbyviewondialog(self):
+        pass
+
     '''根据id点击元素'''
     def clickbyid(self, id, type):
 
@@ -191,14 +204,14 @@ class fineMonkeyRunner:
             except:
 
                 self.debug(
-                    'clickbyid: the %dst time touch error by this id (%s) , not found the view , will retry ' % (
+                    'clickbyid: the %dst time click error by this id (%s) , not found the view , will retry ' % (
                     tmp, id))
                 if (tmp > 1 & DEBUG):
-                    self.debug('Please wait to touch the view')
+                    self.debug('Please wait to click the view')
                 mr.sleep(1)
                 continue
         self.error(
-            'clickbyid: sorry , still can\'t touch view. please check the view is exist or not , or increase the repeat times variable?')
+            'clickbyid: sorry , still can\'t click view. please check the view is exist or not , or increase the repeat times variable?')
         sys.exc_info()
         traceback.print_exc()
         return False
@@ -256,10 +269,89 @@ class fineMonkeyRunner:
         else:
             self.debug('No Selected the element by id,Please check')
 
-        if self.switch =='P':
+        if self.switch =='E':
             self.presskey('KEYCODE_BACK', self.DOWN_AND_UP, 1)
 
         # 如果是真机需要打开语句，模拟器需关闭
         # self.pressKey('KEYCODE_BACK', self.DOWN_AND_UP, 1)
         # mr.sleep(1)
         return True
+
+
+    '''根据当前界面上的任意id获取rootview'''
+    def getcurrentrootview(self,id):
+        hierarchyviewer = self.device.getHierarchyViewer()
+        currentview = hierarchyviewer.findViewById(id)
+        p = currentview
+        rootview = currentview
+        while p != None:
+            rootview = p
+            p = p.parent
+        return rootview
+
+    '''遍历viewnode节点,type=1是完全匹配type=0是包含关系'''
+
+    def traversalviewnode(self, viewnode, text, type):
+        # self.debug('calling traversalViewnode：%s '%str(viewnode))
+        tmplist = []
+        for eachitem in range(len(viewnode.children)):
+            viewnodestr = str(viewnode.children[eachitem])
+            if len(viewnode.children[eachitem].children) != 0:
+                result = self.traversalviewnode(viewnode.children[eachitem], text, type)
+                if result:
+                    return self.traversalviewnode(viewnode.children[eachitem], text, type)
+            else:
+                if 'TextView' in viewnodestr:
+                    viewnodetext = viewnode.children[eachitem].namedProperties.get('text:mText').value.encode('utf8')
+                    if type == 1 and viewnodetext == text:
+                        # self.debug('1 Find the text：%s ' % viewnodetext)
+                        tmplist.append('P')
+                        return True
+
+                    elif type == 0 and (text in viewnodetext):
+                        # self.debug('0 Find the text: %s ' % viewnodetext)
+                        tmplist.append('P')
+                        return True
+                    else:
+                        tmplist.append('F')
+
+    '''该元素内的文本是否包含指定的文本'''
+    def elementshouldcontaintext(self, id, text, type):
+        # 获取指定元id元素的viewnode
+        hierarchyviewer = self.device.getHierarchyViewer()
+        viewnode = hierarchyviewer.findViewById(id)
+        result = self.traversalviewnode(viewnode, text, type)
+        print result
+        if result:
+            self.debug('----PASS----')
+        else:
+            self.debug('----FAIL----')
+
+    '''当前界面的文本是否包含指定的文本'''
+
+    def pageshouldcontaintext(self, id, text, type):
+        # 获取指定元id元素的rootview
+        #hierarchyviewer = self.device.getHierarchyViewer()
+        #viewnode = hierarchyviewer.findViewById(id)
+        viewnode = self.getcurrentrootview(id)
+        result = self.traversalviewnode(viewnode, text, type)
+
+        print result
+        if result:
+            self.debug('----PASS----')
+        else:
+            self.debug('----FAIL----')
+
+    '''判断id的元素文本是否相等'''
+    def equaltextbyid(self,id,text):
+        if self.isexist(id):
+            view =self.getview(id)
+            viewtext = self.gettextbyview(view)
+            if text ==viewtext:
+                self.debug('----Pass----')
+                return True
+            else:
+                self.debug('----Fail----')
+                return False
+
+
