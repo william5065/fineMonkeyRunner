@@ -155,6 +155,31 @@ class fineMonkeyRunner:
         self.debug('device input the %s' % content)
         self.device.type(content)
 
+    '''点击元素根据view 对话框除外'''
+    def clickbyview(self,view,x=0,y=0):
+        self.debug('calling clickbyview function')
+        for tmp in range(repeatTimesOnError):
+            try:
+                hierarchyviewer = self.device.getHierarchyViewer()
+                point = hierarchyviewer.getAbsoluteCenterOfView(view)
+                item_btn_x = point.x + x
+                item_btn_y = point.y + y
+                print item_btn_x, item_btn_y
+                self.device.touch(item_btn_x, item_btn_y,self.DOWN_AND_UP)
+                return True
+            except:
+
+                self.debug('clickbyview: the %dst time click error , not found the view , will retry ' % tmp)
+                if (tmp > 1 & DEBUG):
+                    self.debug('Please wait to click the view')
+                mr.sleep(1)
+                continue
+        self.error(
+            'clickbyview: sorry , still can\'t click view. please check the view is exist or not , or increase the repeat times variable?')
+        sys.exc_info()
+        traceback.print_exc()
+        return False
+
     '''根据id点击元素'''
     def clickbyid(self, id, type):
 
