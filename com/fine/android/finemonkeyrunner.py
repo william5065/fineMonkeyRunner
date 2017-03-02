@@ -238,8 +238,15 @@ class fineMonkeyRunner:
 
     '''获取指定的view文本'''
     def gettextbyview(self, view):
-        if view != None:
-            return (view.namedProperties.get('text:mText').value.encode('utf8'))
+        # if view != None:
+        #  return (view.namedProperties.get('text:mText').value.encode('utf8'))
+        textProperty = view.namedProperties.get("text:mText")
+        if textProperty==None:
+            self.debug('No text property on node')
+            textProperty = view.namedProperties.get("mText")
+            if textProperty == None:
+                self.debug('No text property on node')
+        return textProperty.value.encode('utf8')
 
     '''清除编辑框的文本'''
     def cleartextbyid(self, id):
@@ -354,4 +361,52 @@ class fineMonkeyRunner:
                 self.debug('----Fail----')
                 return False
 
+    '''判断activity是否与预期的相同'''
+    def assertcurrentactivity(self,currentactivity):
+        self.debug('calling assertcurrentactivity function ')
+        try:
+            activity = self.device.shell('adb shell dumpsys activity | findstr "mFocusedActivity"')
+        except IOError:
+            # print '获取当前activity失败'
+            self.debug('获取当前activity失败')
+        else:
+            tmp = activity.split(' ')
+            activity = tmp[3]
+            self.debug('activity : %s' % activity)
+            if activity == currentactivity:
+                return True
+            else:
+                return False
 
+    '''等待期望的activity出现，默认时间20秒'''
+    def waitforactivity(self,waitactivity,repeatTimesOnError=20):
+        for tmp in range(repeatTimesOnError):
+            if self.assertcurrentactivity(waitactivity):
+                return True
+            else:
+                self.debug('waitforactivity: %s this waitactivity does not exists,will try check again' % waitactivity)
+                mr.sleep(1)
+                continue
+
+    '''停止应用'''
+    def forcestopapp(self,packagename):
+
+        self.debug('calling forcestopapp function ')
+        try:
+            activity = self.device.shell('adb shell am force-stop %s' % packagename)
+            return True
+        except IOError:
+            self.debug('强制停止应用')
+
+
+
+'''from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
+from com.android.chimpchat.hierarchyviewer import HierarchyViewer
+device = MonkeyRunner.waitForConnection(5,"emulator-5554")
+hViewer = device.getHierarchyViewer() # 对当前UI视图进行解析
+content = hViewer.findViewById('id/content')  # 通过id查找对应元素
+memberView = content.children[0]
+text = memberView.namedProperties.get('text:mText').value.encode('utf8')
+desc = memberView.namedProperties.get('accessibility:getContentDescription()').value.encode('utf8')
+mleft = memberView.namedProperties.get('layout:mLeft').value.encode('utf8')
+height = memberView.height'''
