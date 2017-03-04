@@ -7,7 +7,7 @@ Created on Sep ,2017
 This file is the main apis sourcecode of the finemonkeyrunner
 '''
 import sys
-import os
+import os,time
 from datetime import datetime
 import traceback
 
@@ -87,7 +87,7 @@ class fineMonkeyRunner:
     '''建立device连接'''
     def waitforconnection(self, waitForConnectionTime,emulatorname):
         try:
-            self.debug("waitForConnectionTime:Success")
+            self.debug("waitforconnectiontime:Success")
             return mr.waitForConnection(waitForConnectionTime,emulatorname)
         except:
             self.error("waitForConnection error")
@@ -113,7 +113,7 @@ class fineMonkeyRunner:
         self.debug('check the id is exist or not')
 
         try:
-            if (self.easydevice.exists(self.getview(id))):
+            if (self.easydevice.exists(self.getviewbyid(id))):
 
                 return True
             else:
@@ -131,7 +131,7 @@ class fineMonkeyRunner:
     '''获取文本根据id'''
     def gettextbyid(self,id):
         if self.isexist(id):
-            view = self.getview(id)
+            view = self.getviewbyid(id)
             viewtext = self.gettextbyview(view)
             return viewtext
         else:
@@ -139,16 +139,16 @@ class fineMonkeyRunner:
             return False
 
     '''获取view根据id'''
-    def getview(self, id):
-        self.debug('calling getview function by the id (%s)' % id)
+    def getviewbyid(self, id):
+        self.debug('calling getviewbyid function by the id (%s)' % id)
         for tmp in range(repeatTimesOnError):
             try:
                 return By.id(id)
             except:
-                self.debug('getview: the %dst time error by id (%s) ,  will retry ' % (tmp, id))
+                self.debug('getviewbyid: the %dst time error by id (%s) ,  will retry ' % (tmp, id))
                 mr.sleep(1)
                 continue
-        self.error('getview: sorry , still can\'t get the view by this id (%s). please check the view ' % id)
+        self.error('getviewbyid: sorry , still can\'t get the view by this id (%s). please check the view ' % id)
         sys.exc_info()
         traceback.print_exc()
         return None
@@ -159,6 +159,31 @@ class fineMonkeyRunner:
         for i in range(times):
             self.device.press(key, type)
         mr.sleep(1)
+    '''根据ID长按'''
+    def longpressbyid(self,id,x=0,y=0):
+        self.debug('calling longpressbyid function')
+
+        hierarchyviewer = self.device.getHierarchyViewer()
+        point = hierarchyviewer.getAbsoluteCenterOfView(view)
+        item_btn_x = point.x + x
+        item_btn_y = point.y + y
+        self.device.touch(item_btn_x, item_btn_y, self.DOWN)
+        self.sleep(1)
+        self.device.touch(item_btn_x, item_btn_y, self.UP)
+        return True
+
+    '''根据view长按'''
+    def longpressbyview(self,view,x=0,y=0):
+        self.debug('calling longpressbyview function')
+        hierarchyviewer = self.device.getHierarchyViewer()
+        view = hierarchyviewer.findViewById(id)
+        point = hierarchyviewer.getAbsoluteCenterOfView(view)
+        item_btn_x = point.x + x
+        item_btn_y = point.y + y
+        self.device.touch(item_btn_x, item_btn_y, self.DOWN)
+        self.sleep(1)
+        self.device.touch(item_btn_x, item_btn_y, self.UP)
+        return True
 
     '''输入文字'''
     def type(self, content):
@@ -254,7 +279,7 @@ class fineMonkeyRunner:
         if (self.isexist(id)):
             if not self.isfocused(id):
                 self.clickbyid(id, self.DOWN_AND_UP)
-            TextView = self.getview(id)
+            TextView = self.getviewbyid(id)
             rangenumber = len(self.gettextbyview(TextView))
             for x in range(rangenumber):
                 self.device.press('KEYCODE_DEL', self.DOWN_AND_UP)
@@ -352,51 +377,72 @@ class fineMonkeyRunner:
     '''判断id的元素文本是否相等'''
     def equaltextbyid(self,id,text):
         if self.isexist(id):
-            view =self.getview(id)
+            view = self.getviewbyid(id)
             viewtext = self.gettextbyview(view)
-            if text ==viewtext:
+            if text == viewtext:
                 self.debug('----Pass----')
                 return True
             else:
                 self.debug('----Fail----')
                 return False
 
-    '''判断activity是否与预期的相同'''
+    '''判断activity是否与预期的相同
     def assertcurrentactivity(self,currentactivity):
+        starttime = time.time()
         self.debug('calling assertcurrentactivity function ')
         try:
-            activity = self.device.shell('adb shell dumpsys activity | findstr "mFocusedActivity"')
+            activity = self.device.shell('dumpsys activity | findstr "mFocusedActivity"') #adb shell
         except IOError:
             # print '获取当前activity失败'
             self.debug('获取当前activity失败')
         else:
+            print activity
             tmp = activity.split(' ')
             activity = tmp[3]
             self.debug('activity : %s' % activity)
             if activity == currentactivity:
+                endtime = time.time()
+                times = endtime - starttime
+                self.debug('Execute time is %d' % times)
                 return True
             else:
                 return False
-
+    '''
     '''等待期望的activity出现，默认时间20秒'''
     def waitforactivity(self,waitactivity,repeatTimesOnError=20):
         for tmp in range(repeatTimesOnError):
-            if self.assertcurrentactivity(waitactivity):
+            if self.assertfocusedwindowmame(waitactivity):
                 return True
             else:
                 self.debug('waitforactivity: %s this waitactivity does not exists,will try check again' % waitactivity)
                 mr.sleep(1)
                 continue
 
-    '''停止应用'''
+    '''判断activity是否相等'''
+    def assertfocusedwindowmame(self,expectactivity):
+        starttime = time.time()
+        #hierarchyviewer = self.device.getHierarchyViewer()
+        winId = self.easydevice.getFocusedWindowId()
+        if winId ==expectactivity:
+            self.debug('%s is correct'% winId.encode('utf-8'))
+            endtime = time.time()
+            times = endtime-starttime
+            self.debug('Execute time is %d' % times)
+            return True
+            #print winId.encode('utf-8')
+        else:
+            self.debug('%s is wrong' % winId.encode('utf-8'))
+            return False
+
+    '''Force to stop the App'''
     def forcestopapp(self,packagename):
 
         self.debug('calling forcestopapp function ')
         try:
-            activity = self.device.shell('adb shell am force-stop %s' % packagename)
+            activity = self.device.shell('am force-stop %s' % packagename)
             return True
         except IOError:
-            self.debug('强制停止应用')
+            self.debug('force stop the app')
 
 
 
