@@ -33,7 +33,7 @@ from com.android.monkeyrunner.easy import EasyMonkeyDevice
 from com.android.monkeyrunner.easy import By
 from com.android.chimpchat.hierarchyviewer import HierarchyViewer
 from com.android.hierarchyviewerlib.models import ViewNode
-
+from com.android.monkeyrunner import MonkeyView
 
 
 class fineMonkeyRunner:
@@ -55,6 +55,7 @@ class fineMonkeyRunner:
         self.DOWN_AND_UP = self.device.DOWN_AND_UP
         self.switch = switch
         self.debug('created the fineEasyDevice')
+        self.viewlist = []
 
     def debug(self, debuginfo):
         if DEBUG:
@@ -138,6 +139,14 @@ class fineMonkeyRunner:
             self.error('Not look for the element or it has a error!')
             return False
 
+    def getviewbyID(self, id):
+        starttime = time.time()
+        print starttime
+        hierarchyviewer = self.device.getHierarchyViewer()
+        view = hierarchyviewer.findViewById(id)
+        endtime = time.time()
+        print endtime
+        return view
     '''获取view根据id'''
     def getviewbyid(self, id):
         self.debug('calling getviewbyid function by the id (%s)' % id)
@@ -164,6 +173,7 @@ class fineMonkeyRunner:
         self.debug('calling longpressbyid function')
 
         hierarchyviewer = self.device.getHierarchyViewer()
+        view = hierarchyviewer.findViewById(id)
         point = hierarchyviewer.getAbsoluteCenterOfView(view)
         item_btn_x = point.x + x
         item_btn_y = point.y + y
@@ -176,7 +186,7 @@ class fineMonkeyRunner:
     def longpressbyview(self,view,x=0,y=0):
         self.debug('calling longpressbyview function')
         hierarchyviewer = self.device.getHierarchyViewer()
-        view = hierarchyviewer.findViewById(id)
+
         point = hierarchyviewer.getAbsoluteCenterOfView(view)
         item_btn_x = point.x + x
         item_btn_y = point.y + y
@@ -185,7 +195,131 @@ class fineMonkeyRunner:
         self.device.touch(item_btn_x, item_btn_y, self.UP)
         return True
 
-    '''输入文字'''
+    '''获view的信息--p'''
+    def getviewinfo_text(self,view):
+        text = view.namedProperties.get('text:mText').value.encode('utf8')
+        return text
+    '''--p'''
+    def getviewinfo_height(self, view):
+        height = view.namedProperties.get('layout:getHeight()').value.encode('utf8')
+        return height
+    '''--p'''
+    def getviewinfo_width(self,view):
+        width = view.namedProperties.get('layout:getWidth()').value.encode('utf8')
+        return width
+    '''--p'''
+    def getviewinfo_mleft(self,view):
+        mleft = view.namedProperties.get('layout:mLeft').value.encode('utf8')
+        return mleft
+    '''-p'''
+    def getviewinfo_mtop(self,view):
+        mtop = view.namedProperties.get('layout:mTop').value.encode('utf8')
+    '''--p'''
+    def getviewinfo_mid(self,view):
+        mid = view.namedProperties.get('mID').value#.encode('utf8')
+        return mid
+    '''--p'''
+    def getviewinfo_visible(self,view):
+        visible = view.namedProperties.get('getVisibility()').value.encode('utf8')
+        if visible =='VISIBLE':
+            self.debug('visible')
+            return True
+        else:
+            return False
+    '''--p'''
+    def getviewinfo_xy(self,view):
+        hierarchyviewer = self.device.getHierarchyViewer()
+        point = hierarchyviewer.getAbsoluteCenterOfView(view)
+        return point.x,point.y
+    '''--p'''
+    '''根据id返回该元素的一个x,y,h,w的元组'''
+    def getelementinfo_locate(self,id):
+        xyhw= self.easydevice.locate(By.id(id))
+        return xyhw
+
+    def getviewinfo_classname(self):#,view
+        hierarchyviewer = self.device.getHierarchyViewer()
+        print hierarchyviewer.getRootView()
+        #pass
+    '''
+    def traversalviewsameid(self, viewnode, id):
+        # self.debug('calling traversalViewnode：%s '%str(viewnode))
+        tmplist = []
+        for eachitem in range(len(viewnode.children)):
+            if len(viewnode.children[eachitem].children) != 0:
+                if self.getviewinfo_mid(viewnode.children[eachitem]) == id:
+                    print self.getviewinfo_mid(viewnode.children[eachitem])
+                    self.viewlist.append(viewnode.children[eachitem])
+                result = self.traversalviewsameid(viewnode.children[eachitem],id)
+                self.debug(result)
+            else:
+                if self.getviewinfo_mid(viewnode.children[eachitem]) == id:
+                    self.viewlist.append(viewnode.children[eachitem])
+    '''
+    '''type：1是代表classname，type：2代表是id ---p'''
+    def traversalviewsametype(self, viewnode, name,type):
+        # self.debug('calling traversalViewnode：%s '%str(viewnode))
+        #tmplist = []
+        for eachitem in range(len(viewnode.children)):
+            tmpclassname = viewnode.children[eachitem]
+            if len(viewnode.children[eachitem].children) != 0:
+
+                if type == 1 and (name in str(tmpclassname)):
+                    self.viewlist.append(viewnode.children[eachitem])
+                if type == 2 and self.getviewinfo_mid(viewnode.children[eachitem]) == name:
+                    self.viewlist.append(viewnode.children[eachitem])
+                result = self.traversalviewsametype(viewnode.children[eachitem],name,type)
+                #self.debug(result)
+            else:
+                if type ==1 and (name in str(tmpclassname)):
+                    self.viewlist.append(viewnode.children[eachitem])
+                if type == 2 and self.getviewinfo_mid(viewnode.children[eachitem]) == name:
+                    self.viewlist.append(viewnode.children[eachitem])
+
+    '''获取相同id的view对象列表 --p'''
+    def getviewssameid(self,parentid,id):
+        self.viewlist = []
+        starttime =time.time()
+        hierarchyviewer = self.device.getHierarchyViewer()
+        viewnode = hierarchyviewer.findViewById(parentid)
+        self.traversalviewsametype(viewnode,id,2)
+        endtime = time.time()
+        print 'tiem:',endtime-starttime
+        return self.viewlist
+        #pass
+
+    '''获取相同classname的view对象列表 --p'''
+
+    def getviewssameclassname(self, parentid, classname):
+        self.viewlist = []
+        starttime = time.time()
+        hierarchyviewer = self.device.getHierarchyViewer()
+        viewnode = hierarchyviewer.findViewById(parentid)
+        self.traversalviewsametype(viewnode, classname, 1)
+        endtime = time.time()
+        print 'tiem:', endtime - starttime
+        return self.viewlist
+        # pass
+
+    '''获取相同classname的view对象列表 '''
+
+    def getviewssametext(self, parentid, text):
+        pass
+        self.viewlist = []
+        starttime = time.time()
+        hierarchyviewer = self.device.getHierarchyViewer()
+        viewnode = hierarchyviewer.findViewById(parentid)
+        self.traversalviewsametype(viewnode, text, 1)
+        endtime = time.time()
+        print 'tiem:', endtime - starttime
+        return self.viewlist
+        # pass
+    '''在指定的id上输入文字--p'''
+    def typebyid(self,id, content):
+        self.debug('device input the %s by id' % content)
+        self.easydevice.type(By.id(id),content)
+
+    '''在当前焦点输入文字--p'''
     def type(self, content):
         self.debug('device input the %s' % content)
         self.device.type(content)
@@ -214,6 +348,24 @@ class fineMonkeyRunner:
         sys.exc_info()
         traceback.print_exc()
         return False
+
+    '''点击对话框中的view'''
+    def clickdialogelementbyview(self, view):
+        hierarchyviewer = self.device.getHierarchyViewer()
+        width = self.device.getProperty("display.width")
+        height = self.device.getProperty("display.height")
+        point = hierarchyviewer.getAbsoluteCenterOfView(view)
+        p = view
+        rootview = view
+        while p != None:
+            rootview = p
+            p = p.parent
+        x = (int(width) - int(rootview.width)) / 2 + point.x
+        y = (int(height) - int(rootview.height)) / 2 + point.y
+        print x, y
+        self.device.touch(x, y, self.DOWN_AND_UP)
+
+        print "clicked view"
 
     def clickbyviewondialog(self):
         pass
@@ -363,8 +515,7 @@ class fineMonkeyRunner:
 
     def pageshouldcontaintext(self, id, text, type):
         # 获取指定元id元素的rootview
-        #hierarchyviewer = self.device.getHierarchyViewer()
-        #viewnode = hierarchyviewer.findViewById(id)
+
         viewnode = self.getcurrentrootview(id)
         result = self.traversalviewnode(viewnode, text, type)
 
@@ -418,22 +569,22 @@ class fineMonkeyRunner:
                 mr.sleep(1)
                 continue
 
-    '''判断activity是否相等'''
+    '''判断activity是否相等 --p'''
     def assertfocusedwindowmame(self,expectactivity):
         starttime = time.time()
         #hierarchyviewer = self.device.getHierarchyViewer()
         winId = self.easydevice.getFocusedWindowId()
         if winId ==expectactivity:
-            self.debug('%s is correct'% winId.encode('utf-8'))
+            self.debug('%s is correct'% winId)#.encode('utf-8')
             endtime = time.time()
             times = endtime-starttime
             self.debug('Execute time is %d' % times)
             return True
             #print winId.encode('utf-8')
         else:
-            self.debug('%s is wrong' % winId.encode('utf-8'))
+            self.debug('%s is wrong' % winId)
             return False
-
+    '''--p'''
     '''Force to stop the App'''
     def forcestopapp(self,packagename):
 
