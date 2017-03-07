@@ -110,32 +110,26 @@ class fineMonkeyRunner:
     '''指定的id元素是否存在'''
 
     def isexist(self, id):
-
         self.debug('check the id is exist or not')
-
         try:
             if (self.easydevice.exists(self.getviewbyid(id))):
-
                 return True
             else:
-
                 self.debug('isexist: %s this id does not exists,will try check again' % id)
                 self.sleep(1)
-
         except:
-
-            #self.debug('isexist: the %dst time check id (%s) existing error ,  , will retry ' % (tmp, id))
+            # self.debug('isexist: the %dst time check id (%s) existing error ,  , will retry ' % (tmp, id))
             self.sleep(1)
 
         return False
-
 
     '''对某一个键按多次'''
     def presskey(self, key, times, type):
         # self.device.press('KEYCODE_ENTER', MonkeyDevice.DOWN_AND_UP)
         for i in range(times):
             self.device.press(key, type)
-        mr.sleep(1)
+        self.sleep(1)
+
     '''根据ID长按'''
     def longpressbyid(self,id,x=0,y=0):
         self.debug('calling longpressbyid function')
@@ -165,8 +159,16 @@ class fineMonkeyRunner:
 
     '''获view的信息--p'''
     def getviewinfo_text(self,view):
-        text = view.namedProperties.get('text:mText').value.encode('utf8')
-        return text
+        # text = view.namedProperties.get('text:mText').value.encode('utf8')
+        try:
+            textproperty = view.namedProperties.get("text:mText").value.encode('utf8')
+        except:
+            self.debug('%s has not text:mText Property!'% str(view))
+        else:
+            #self.debug('The text is %s ' % textproperty)
+            return textproperty
+
+
     '''--p'''
     def getviewinfo_height(self, view):
         height = view.namedProperties.get('layout:getHeight()').value.encode('utf8')
@@ -205,7 +207,7 @@ class fineMonkeyRunner:
     def gettextbyid(self, id):
         if self.isexist(id):
             view = self.getviewbyid(id)
-            viewtext = self.gettextbyview(view)
+            viewtext = self.getviewinfo_text(view)
             return viewtext
         else:
             self.error('Not look for the element or it has a error!')
@@ -250,28 +252,13 @@ class fineMonkeyRunner:
         classname = tmp[-1].split('@')[0]
         return classname
 
-    '''
-    def traversalviewsameid(self, viewnode, id):
-        # self.debug('calling traversalViewnode：%s '%str(viewnode))
-        tmplist = []
-        for eachitem in range(len(viewnode.children)):
-            if len(viewnode.children[eachitem].children) != 0:
-                if self.getviewinfo_mid(viewnode.children[eachitem]) == id:
-                    print self.getviewinfo_mid(viewnode.children[eachitem])
-                    self.viewlist.append(viewnode.children[eachitem])
-                result = self.traversalviewsameid(viewnode.children[eachitem],id)
-                self.debug(result)
-            else:
-                if self.getviewinfo_mid(viewnode.children[eachitem]) == id:
-                    self.viewlist.append(viewnode.children[eachitem])
-    '''
     '''type：1是代表classname，type：2代表是id type：3代表是text ---p'''
     def traversalviewsametype(self, viewnode, name,type):
         # self.debug('calling traversalViewnode：%s '%str(viewnode))
         #tmplist = []
         for eachitem in range(len(viewnode.children)):
             tmpclassname = viewnode.children[eachitem]
-            controls = 'TextView' in str(tmpclassname) or 'EditView' in str(tmpclassname) or 'Button' in str(tmpclassname)
+            controls = 'TextView' in str(tmpclassname) or 'EditText' in str(tmpclassname) or 'Button' in str(tmpclassname)
             if len(viewnode.children[eachitem].children) != 0:
 
                 if type == 1 and (name in str(tmpclassname)):
@@ -316,9 +303,13 @@ class fineMonkeyRunner:
         endtime = time.time()
         self.debug('Elapsed Iime:%f' % (endtime-starttime))
         return self.viewlist
-        # pass
 
-    '''获取指定id元素下的相同文本的view对象列表 '''
+    '''拖拽屏幕 ---p'''
+    def dragscreen(self,start, end, duration, steps):
+        self.debug('calling dragscreen function...')
+        md.drag(start, end, duration, steps)
+
+    '''获取指定id元素下的相同文本的view对象列表 ---p'''
     def getviewssametext(self, parentid, text):
         self.debug('calling getviewssametext function...')
         self.viewlist = []
@@ -329,7 +320,7 @@ class fineMonkeyRunner:
         endtime = time.time()
         self.debug('Elapsed Iime:%f' % (endtime-starttime))
         return self.viewlist
-        # pass
+
     '''在指定的id上输入文字--p'''
     def typebyid(self,id, content):
         self.debug('device input the %s by id' % content)
@@ -340,7 +331,7 @@ class fineMonkeyRunner:
         self.debug('device input the %s' % content)
         self.device.type(content)
 
-    '''点击元素根据view 对话框除外'''
+    '''点击元素根据view 对话框除外 ---p'''
     def clickelementbyview(self,view,x=0,y=0):
         self.debug('calling clickelementbyview function')
         for tmp in range(repeatTimesOnError):
@@ -386,16 +377,14 @@ class fineMonkeyRunner:
     def clickbyviewondialog(self):
         pass
 
-    '''根据id点击元素'''
+    '''根据id点击元素 ---p'''
     def clickbyid(self, id, type):
-
         self.debug('calling clickbyid function')
         for tmp in range(repeatTimesOnError):
             try:
                 self.easydevice.touch(By.id(id), type)
                 return True
             except:
-
                 self.debug(
                     'clickbyid: the %dst time click error by this id (%s) , not found the view , will retry ' % (
                     tmp, id))
@@ -408,14 +397,28 @@ class fineMonkeyRunner:
         sys.exc_info()
         traceback.print_exc()
         return False
+    '''根据point点击元素 ---p'''
+    def clickpoint(self, x, y, type):
+        self.debug('calling click the point ')
+        for tmp in range(repeatTimesOnError):
+            try:
+                self.device.touch(x, y, type)
+                return True
+            except:
+                self.debug('clickpoint: %d time click point error , will retry ' % tmp)
+                mr.sleep(1)
+                continue
+        self.error(
+            'clickpoint: sorry , still can\'t click point. please check the view is exist or not , or increase the repeat times variable?')
+        sys.exc_info()
+        traceback.print_exc()
+        return False
 
-    '''判断给定的id元素是否是选中状态'''
+    '''判断给定的id元素是否是选中状态---p'''
     def isfocused(self, id):
-
         self.debug('checking the view is focused or not')
         # hierarchyViewer = self.device.getHierarchyViewer()
         # print hierarchyViewer.findViewById(id).hasFocus
-
         for tmp in range(repeatTimesOnError):
             try:
                 hierarchyViewer = self.device.getHierarchyViewer()
@@ -429,7 +432,7 @@ class fineMonkeyRunner:
         traceback.print_exc()
         return False
 
-    '''获取指定的view文本'''
+    '''获取指定的view文本 getviewinfo_text已经存在
     def gettextbyview(self, view):
         # if view != None:
         #  return (view.namedProperties.get('text:mText').value.encode('utf8'))
@@ -440,15 +443,15 @@ class fineMonkeyRunner:
             if textProperty == None:
                 self.debug('No text property on node')
         return textProperty.value.encode('utf8')
-
-    '''清除编辑框的文本'''
+    '''
+    '''清除编辑框的文本 ---P'''
     def cleartextbyid(self, id):
         self.debug('calling cleartextbyid function by the id (%s)' % id)
-        if (self.isexist(id)):
+        if self.isexist(id):
             if not self.isfocused(id):
                 self.clickbyid(id, self.DOWN_AND_UP)
-            TextView = self.getviewbyid(id)
-            rangenumber = len(self.gettextbyview(TextView))
+            textview = self.getviewbyID(id)
+            rangenumber = len(self.getviewinfo_text(textview))
             for x in range(rangenumber):
                 self.device.press('KEYCODE_DEL', self.DOWN_AND_UP)
             for x in range(rangenumber):
@@ -460,7 +463,7 @@ class fineMonkeyRunner:
         traceback.print_exc()
         return False
 
-    '''根据id输入文本框内容'''
+    '''根据id输入文本框内容 ---p'''
     def inputtextbyid(self,id,text):
 
         self.clickbyid(id,self.DOWN_AND_UP)
@@ -470,15 +473,16 @@ class fineMonkeyRunner:
             self.debug('No Selected the element by id,Please check')
 
         if self.switch =='E':
+            self.debug('This is an emulator')
+        else:
             self.presskey('KEYCODE_BACK', self.DOWN_AND_UP, 1)
-
         # 如果是真机需要打开语句，模拟器需关闭
         # self.pressKey('KEYCODE_BACK', self.DOWN_AND_UP, 1)
         # mr.sleep(1)
         return True
 
 
-    '''根据当前界面上的任意id获取rootview'''
+    '''根据当前界面上的任意id获取rootview ---p'''
     def getcurrentrootview(self,id):
         hierarchyviewer = self.device.getHierarchyViewer()
         currentview = hierarchyviewer.findViewById(id)
@@ -501,8 +505,8 @@ class fineMonkeyRunner:
                 if result:
                     return self.traversalviewnode(viewnode.children[eachitem], text, type)
             else:
-                if 'TextView' in viewnodestr:
-                    viewnodetext = viewnode.children[eachitem].namedProperties.get('text:mText').value.encode('utf8')
+                if 'TextView' in viewnodestr or 'EditText' in viewnodestr or 'Button' in viewnodestr:
+                    viewnodetext = self.getviewinfo_text(viewnode.children[eachitem]) #viewnode.children[eachitem].namedProperties.get('text:mText').value.encode('utf8')
                     if type == 1 and viewnodetext == text:
                         # self.debug('1 Find the text：%s ' % viewnodetext)
                         tmplist.append('P')
@@ -515,42 +519,48 @@ class fineMonkeyRunner:
                     else:
                         tmplist.append('F')
 
-    '''该元素内的文本是否包含指定的文本'''
+    '''该元素内的文本是否包含指定的文本 ---p'''
     def elementshouldcontaintext(self, id, text, type):
         # 获取指定元id元素的viewnode
+        starttime = time.time()
         hierarchyviewer = self.device.getHierarchyViewer()
         viewnode = hierarchyviewer.findViewById(id)
         result = self.traversalviewnode(viewnode, text, type)
-        print result
+        endtime =time.time()
+        #print result
         if result:
-            self.debug('----PASS----')
+            self.debug('Elapsed Iime:%f' % (endtime - starttime))
+            return True
         else:
-            self.debug('----FAIL----')
+            self.debug('Elapsed Iime:%f' % (endtime - starttime))
+            return False
 
-    '''当前界面的文本是否包含指定的文本'''
+    '''当前界面的文本是否包含指定的文本 ---p'''
 
     def pageshouldcontaintext(self, id, text, type):
         # 获取指定元id元素的rootview
-
+        starttime = time.time()
         viewnode = self.getcurrentrootview(id)
         result = self.traversalviewnode(viewnode, text, type)
-
-        print result
+        endtime = time.time()
+        #print result
         if result:
-            self.debug('----PASS----')
+            self.debug('Elapsed Iime:%f' % (endtime - starttime))
+            return True
         else:
-            self.debug('----FAIL----')
+            self.debug('Elapsed Iime:%f' % (endtime - starttime))
+            return False
 
-    '''判断id的元素文本是否相等'''
+    '''判断id的元素文本是否相等---p'''
     def equaltextbyid(self,id,text):
         if self.isexist(id):
-            view = self.getviewbyid(id)
-            viewtext = self.gettextbyview(view)
+            view = self.getviewbyID(id)
+            viewtext = self.getviewinfo_text(view)
             if text == viewtext:
-                self.debug('----Pass----')
+                #self.debug('----Pass----')
                 return True
             else:
-                self.debug('----Fail----')
+                #self.debug('----Fail----')
                 return False
 
     '''判断activity是否与预期的相同
@@ -575,7 +585,7 @@ class fineMonkeyRunner:
             else:
                 return False
     '''
-    '''等待期望的activity出现，默认时间20秒'''
+    '''等待期望的activity出现，默认时间20秒 ---p'''
     def waitforactivity(self,waitactivity,repeatTimesOnError=20):
         for tmp in range(repeatTimesOnError):
             if self.assertfocusedwindowmame(waitactivity):
@@ -611,15 +621,3 @@ class fineMonkeyRunner:
         except IOError:
             self.debug('force stop the app')
 
-
-
-'''from com.android.monkeyrunner import MonkeyRunner, MonkeyDevice
-from com.android.chimpchat.hierarchyviewer import HierarchyViewer
-device = MonkeyRunner.waitForConnection(5,"emulator-5554")
-hViewer = device.getHierarchyViewer() # 对当前UI视图进行解析
-content = hViewer.findViewById('id/content')  # 通过id查找对应元素
-memberView = content.children[0]
-text = memberView.namedProperties.get('text:mText').value.encode('utf8')
-desc = memberView.namedProperties.get('accessibility:getContentDescription()').value.encode('utf8')
-mleft = memberView.namedProperties.get('layout:mLeft').value.encode('utf8')
-height = memberView.height'''
