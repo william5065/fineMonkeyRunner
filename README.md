@@ -1,8 +1,10 @@
-## Welcome to GitHub Pages
+## Welcome to fineMonkeyRunner Pages
 
-You can use the [editor on GitHub](https://github.com/william5065/fineMonkeyRunner/edit/master/README.md) to maintain and preview the content for your website in Markdown files.
-
-Whenever you commit to this repository, GitHub Pages will run [Jekyll](https://jekyllrb.com/) to rebuild the pages in your site, from the content in your Markdown files.
+fineMonkeyRunner 是一个基于MonkeyRunner的api的二次封装，增加了大量的接口方便使用者调用，由于MonkeyRunner提供的
+一些接口不能调用成功在 fineMonkeyRunner中也再次封装了，也提供了一些作为结果验证的接口，方便使用者判断case的结果。
+目前第一版已经可以使用。也欢迎大家能一起把fineMonkeyRunner一起维护下去，更好的方便大家使用。减少使用者的代码量
+以及提高元素定位的准确度以及效率将是这个目标。再次欢迎大家一起加入，快乐开源，开源快乐！
+在这里也说明一下fineMonkeyRunner也参考得了wrapEasyMonkey，非常感谢！让我们继续开源。
 
 ### Markdown
 
