@@ -129,38 +129,6 @@ class fineMonkeyRunner:
 
         return False
 
-    '''获取文本根据id'''
-    def gettextbyid(self,id):
-        if self.isexist(id):
-            view = self.getviewbyid(id)
-            viewtext = self.gettextbyview(view)
-            return viewtext
-        else:
-            self.error('Not look for the element or it has a error!')
-            return False
-
-    def getviewbyID(self, id):
-        starttime = time.time()
-        print starttime
-        hierarchyviewer = self.device.getHierarchyViewer()
-        view = hierarchyviewer.findViewById(id)
-        endtime = time.time()
-        print endtime
-        return view
-    '''获取view根据id'''
-    def getviewbyid(self, id):
-        self.debug('calling getviewbyid function by the id (%s)' % id)
-        for tmp in range(repeatTimesOnError):
-            try:
-                return By.id(id)
-            except:
-                self.debug('getviewbyid: the %dst time error by id (%s) ,  will retry ' % (tmp, id))
-                mr.sleep(1)
-                continue
-        self.error('getviewbyid: sorry , still can\'t get the view by this id (%s). please check the view ' % id)
-        sys.exc_info()
-        traceback.print_exc()
-        return None
 
     '''对某一个键按多次'''
     def presskey(self, key, times, type):
@@ -231,16 +199,57 @@ class fineMonkeyRunner:
         hierarchyviewer = self.device.getHierarchyViewer()
         point = hierarchyviewer.getAbsoluteCenterOfView(view)
         return point.x,point.y
+
+    '''获取文本根据id'''
+
+    def gettextbyid(self, id):
+        if self.isexist(id):
+            view = self.getviewbyid(id)
+            viewtext = self.gettextbyview(view)
+            return viewtext
+        else:
+            self.error('Not look for the element or it has a error!')
+            return False
+
+    '''获取view根据id --p'''
+    def getviewbyID(self, id):
+        starttime = time.time()
+        print starttime
+        hierarchyviewer = self.device.getHierarchyViewer()
+        view = hierarchyviewer.findViewById(id)
+        endtime = time.time()
+        self.debug('Elapsed Iime:%f' % (endtime - starttime))
+        return view
+
+    '''获取view根据id --p'''
+
+    def getviewbyid(self, id):
+        self.debug('calling getviewbyid function by the id (%s)' % id)
+        for tmp in range(repeatTimesOnError):
+            try:
+                return By.id(id)
+            except:
+                self.debug('getviewbyid: the %dst time error by id (%s) ,  will retry ' % (tmp, id))
+                mr.sleep(1)
+                continue
+        self.error('getviewbyid: sorry , still can\'t get the view by this id (%s). please check the view ' % id)
+        sys.exc_info()
+        traceback.print_exc()
+        return None
+
     '''--p'''
     '''根据id返回该元素的一个x,y,h,w的元组'''
     def getelementinfo_locate(self,id):
         xyhw= self.easydevice.locate(By.id(id))
         return xyhw
 
-    def getviewinfo_classname(self):#,view
-        hierarchyviewer = self.device.getHierarchyViewer()
-        print hierarchyviewer.getRootView()
-        #pass
+    '''根据view获取类名---p'''
+    def getviewinfo_classname(self,view):#,view
+        self.debug('calling traversalViewnode：%s ' % str(view))
+        tmp = str(view).split('.')
+        classname = tmp[-1].split('@')[0]
+        return classname
+
     '''
     def traversalviewsameid(self, viewnode, id):
         # self.debug('calling traversalViewnode：%s '%str(viewnode))
@@ -256,62 +265,69 @@ class fineMonkeyRunner:
                 if self.getviewinfo_mid(viewnode.children[eachitem]) == id:
                     self.viewlist.append(viewnode.children[eachitem])
     '''
-    '''type：1是代表classname，type：2代表是id ---p'''
+    '''type：1是代表classname，type：2代表是id type：3代表是text ---p'''
     def traversalviewsametype(self, viewnode, name,type):
         # self.debug('calling traversalViewnode：%s '%str(viewnode))
         #tmplist = []
         for eachitem in range(len(viewnode.children)):
             tmpclassname = viewnode.children[eachitem]
+            controls = 'TextView' in str(tmpclassname) or 'EditView' in str(tmpclassname) or 'Button' in str(tmpclassname)
             if len(viewnode.children[eachitem].children) != 0:
 
                 if type == 1 and (name in str(tmpclassname)):
                     self.viewlist.append(viewnode.children[eachitem])
                 if type == 2 and self.getviewinfo_mid(viewnode.children[eachitem]) == name:
                     self.viewlist.append(viewnode.children[eachitem])
-                result = self.traversalviewsametype(viewnode.children[eachitem],name,type)
-                #self.debug(result)
+
+                if type == 3 and controls and self.getviewinfo_text(viewnode.children[eachitem]) == name:
+                    self.viewlist.append(viewnode.children[eachitem])
+                self.traversalviewsametype(viewnode.children[eachitem], name, type)
+                # self.debug(result)
             else:
-                if type ==1 and (name in str(tmpclassname)):
+                if type == 1 and (name in str(tmpclassname)):
                     self.viewlist.append(viewnode.children[eachitem])
                 if type == 2 and self.getviewinfo_mid(viewnode.children[eachitem]) == name:
                     self.viewlist.append(viewnode.children[eachitem])
+                if type == 3 and controls and self.getviewinfo_text(viewnode.children[eachitem]) == name:
+                    self.viewlist.append(viewnode.children[eachitem])
 
-    '''获取相同id的view对象列表 --p'''
+    '''获取指定id元素下的相同id的view对象列表 --p'''
     def getviewssameid(self,parentid,id):
+        self.debug('calling getviewssameid function...')
         self.viewlist = []
         starttime =time.time()
         hierarchyviewer = self.device.getHierarchyViewer()
         viewnode = hierarchyviewer.findViewById(parentid)
         self.traversalviewsametype(viewnode,id,2)
         endtime = time.time()
-        print 'tiem:',endtime-starttime
+        self.debug('Elapsed Iime:%f' % (endtime-starttime))
         return self.viewlist
         #pass
 
-    '''获取相同classname的view对象列表 --p'''
+    '''获取指定id元素下的相同classname的view对象列表 --p'''
 
     def getviewssameclassname(self, parentid, classname):
+        self.debug('calling getviewssameclassname function...')
         self.viewlist = []
         starttime = time.time()
         hierarchyviewer = self.device.getHierarchyViewer()
         viewnode = hierarchyviewer.findViewById(parentid)
         self.traversalviewsametype(viewnode, classname, 1)
         endtime = time.time()
-        print 'tiem:', endtime - starttime
+        self.debug('Elapsed Iime:%f' % (endtime-starttime))
         return self.viewlist
         # pass
 
-    '''获取相同classname的view对象列表 '''
-
+    '''获取指定id元素下的相同文本的view对象列表 '''
     def getviewssametext(self, parentid, text):
-        pass
+        self.debug('calling getviewssametext function...')
         self.viewlist = []
         starttime = time.time()
         hierarchyviewer = self.device.getHierarchyViewer()
         viewnode = hierarchyviewer.findViewById(parentid)
-        self.traversalviewsametype(viewnode, text, 1)
+        self.traversalviewsametype(viewnode, text, 3)
         endtime = time.time()
-        print 'tiem:', endtime - starttime
+        self.debug('Elapsed Iime:%f' % (endtime-starttime))
         return self.viewlist
         # pass
     '''在指定的id上输入文字--p'''
@@ -325,8 +341,8 @@ class fineMonkeyRunner:
         self.device.type(content)
 
     '''点击元素根据view 对话框除外'''
-    def clickbyview(self,view,x=0,y=0):
-        self.debug('calling clickbyview function')
+    def clickelementbyview(self,view,x=0,y=0):
+        self.debug('calling clickelementbyview function')
         for tmp in range(repeatTimesOnError):
             try:
                 hierarchyviewer = self.device.getHierarchyViewer()
@@ -338,13 +354,13 @@ class fineMonkeyRunner:
                 return True
             except:
 
-                self.debug('clickbyview: the %dst time click error , not found the view , will retry ' % tmp)
+                self.debug('clickelementbyview: the %dst time click error , not found the view , will retry ' % tmp)
                 if (tmp > 1 & DEBUG):
                     self.debug('Please wait to click the view')
                 mr.sleep(1)
                 continue
         self.error(
-            'clickbyview: sorry , still can\'t click view. please check the view is exist or not , or increase the repeat times variable?')
+            'clickelementbyview: sorry , still can\'t click view. please check the view is exist or not , or increase the repeat times variable?')
         sys.exc_info()
         traceback.print_exc()
         return False
