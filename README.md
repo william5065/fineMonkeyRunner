@@ -22,9 +22,6 @@ fineMonkeyRunner 是一个基于MonkeyRunner的api的二次封装，增加了大
 3、equaltextbyview
    指定视图的文本是否与期望的相等
 
-### Jekyll Themes
-
-Your Pages site will use the layout and styles from the Jekyll theme you have selected in your [repository settings](https://github.com/william5065/fineMonkeyRunner/settings). The name of this theme is saved in the Jekyll `_config.yml` configuration file.
 
 ### 技术讨论
 qq群：601631209
